@@ -13,6 +13,7 @@ class HashTable:
     that accepts string keys
     '''
     def __init__(self, capacity):
+        self.count = 0
         self.capacity = capacity  # Number of buckets in the hash table
         self.storage = [None] * capacity
 
@@ -20,19 +21,22 @@ class HashTable:
     def _hash(self, key):
         '''
         Hash an arbitrary key and return an integer.
-
         You may replace the Python hash with DJB2 as a stretch goal.
         '''
         return hash(key)
+        # return self._hash_djb2(key)
 
 
     def _hash_djb2(self, key):
         '''
         Hash an arbitrary key using DJB2 hash
-
         OPTIONAL STRETCH: Research and implement DJB2
         '''
-        pass
+        hash = 5381
+        for x in key:
+            hash = (( hash << 5) + hash) + ord(x)
+
+        return hash & 0xFFFFFFFF
 
 
     def _hash_mod(self, key):
@@ -46,45 +50,87 @@ class HashTable:
     def insert(self, key, value):
         '''
         Store the value with the given key.
-
         Hash collisions should be handled with Linked List Chaining.
-
         Fill this in.
         '''
-        pass
+        hashed = self._hash_mod(key)
 
-
+        if self.storage[hashed] is not None:
+            curr = self.storage[hashed]
+            while True:
+                #overwrite values when the key is the same
+                if curr.key is key:
+                    curr.value = value
+                    break
+                #check if there is another pair next, if not add this one to the chain
+                if curr.next is None:
+                    curr.next = LinkedPair(key, value)
+                    self.count += 1
+                    break
+                #move to the next pair
+                elif curr.next is not None:
+                    curr = curr.next
+                #failsafe error
+                else:
+                    print('Warning: Error inserting value.')
+        else:
+            self.storage[hashed] = LinkedPair(key, value)
+            self.count += 1
 
     def remove(self, key):
         '''
         Remove the value stored with the given key.
-
         Print a warning if the key is not found.
-
         Fill this in.
-        '''
-        pass
+        ''' 
+        hashed = self._hash_mod(key)
+
+        if self.storage[hashed] is None:
+            print('Warning Key NOT Found')
+        else:
+            self.storage[hashed] = None
 
 
     def retrieve(self, key):
         '''
         Retrieve the value stored with the given key.
-
         Returns None if the key is not found.
-
         Fill this in.
         '''
-        pass
+        hashed = self._hash_mod(key)
+
+        if self.storage[hashed] is None:
+            return None
+        else:
+            curr = self.storage[hashed]
+            if curr.key == key:
+                return curr.value
+            while curr is not None:
+                if curr.key == key:
+                    return curr.value
+                else:
+                    curr = curr.next
+            return None
 
 
     def resize(self):
         '''
         Doubles the capacity of the hash table and
         rehash all key/value pairs.
-
         Fill this in.
         '''
-        pass
+        self.capacity *= 2
+        new_storage = [None] * self.capacity
+        old_storage = self.storage
+        self.storage = new_storage
+        
+        for i in old_storage:
+            if i is not None:
+                curr = i
+                while curr is not None:
+                    self.insert(curr.key, curr.value)
+                    curr = curr.next
+        print(self.storage,'this is the resize')
 
 
 
@@ -101,6 +147,10 @@ if __name__ == "__main__":
     print(ht.retrieve("line_1"))
     print(ht.retrieve("line_2"))
     print(ht.retrieve("line_3"))
+    
+    # Test remove
+    # ht.remove("line_3")
+    # ht.remove("line_3") 
 
     # Test resizing
     old_capacity = len(ht.storage)
